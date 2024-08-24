@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Full Screen Konva Sequential Diagram</title>
+
+		<link rel="stylesheet" href="styles.css" />
+		<script src="https://unpkg.com/konva@8.3.13/konva.min.js"></script>
+	</head>
+	<body>
+		<div class="toolbar">
+			<div>
+				<button>Undo</button>
+				<button>Redo</button>
+			</div>
+			<div>
+				<input type="color" value="#1dbbce" id="colorPicker" />
+
+				<button>Change Size</button>
+			</div>
+		</div>
+		<div class="main-content">
+			<div id="container"></div>
+			<div class="chat-window">
+				<div class="chat-messages">
+					<!-- Chat messages will go here -->
+				</div>
+				<div class="chat-input">
+					<input type="text" placeholder="Type your message..." />
+					<button>Send</button>
+				</div>
+			</div>
+		</div>
+		<div class="timeline">
+			<button id="playPauseBtn">Play</button>
+			<button id="downloadBtn" disabled>Download</button>
+		</div>
+
+		<script>
+			let stage, layer, bg_layer;
+
+			// Set stage size to full screen
+			function resizeStage() {
+				stage.width(window.innerWidth - 300);
+				stage.height(window.innerHeight);
+
+                bg_layer.width(window.innerWidth - 300);
+                bg_layer.height(window.innerHeight);
+			}
+
+            window.addEventListener("resize", resizeStage);
+			// Initialize Konva stage and layer
+			stage = new Konva.Stage({
+				container: "container",
+				width: window.innerWidth - 300,
+				height: window.innerHeight,
+			});
+			layer = new Konva.Layer();
+            bg_layer = new Konva.Layer();
+
+            stage.add(bg_layer);
+            stage.add(layer);
+
+            function setBackgroundColor(background) {
+                const bg = new Konva.Rect({
+                    x: 0,
+                    y: 0,
+                    width: stage.width(),
+                    height: stage.height(),
+                    fill: background,
+                });
+                bg_layer.add(bg);
+            }
+
+            setBackgroundColor("#1dbbce");
+
+
+			// Data for the sequential diagram
+			const data = [
+				{ x: 50, y: 100, size: 40, color: "red", label: "Step 1" },
+				{ x: 150, y: 100, size: 40, color: "green", label: "Step 2" },
+				{ x: 250, y: 100, size: 40, color: "blue", label: "Step 3" },
+				{ x: 350, y: 100, size: 40, color: "orange", label: "Step 4" },
+				{ x: 450, y: 100, size: 40, color: "purple", label: "Step 5" },
+			];
+
+          
+			function createSquare(x, y, size, color) {
+				return new Konva.Rect({
+					x: x,
+					y: y,
+					width: 0,
+					height: 0,
+					fill: color,
+				});
+			}
+
+			function createLine(points) {
+				return new Konva.Line({
+					points: points,
+					stroke: "black",
+					strokeWidth: 2,
+				});
+			}
+
+			function createText(text, x, y) {
+				return new Konva.Text({
+					x: x,
+					y: y,
+					text: text,
+					fontSize: 14,
+					fontFamily: "Arial",
+					fill: "black",
+					align: "center",
+					opacity: 0,
+				});
+			}
+
+			let squares = [];
+			let lines = [];
+			let texts = [];
+
+			data.forEach((item, i) => {
+				squares.push(createSquare(item.x, item.y, item.size, item.color));
+				texts.push(createText(item.label, item.x, item.y + item.size + 20));
+				layer.add(squares[i]);
+				layer.add(texts[i]);
+
+				if (i > 0) {
+					const previous = data[i - 1];
+					lines.push(
+						createLine([
+							previous.x + previous.size / 2,
+							previous.y + previous.size / 2,
+							previous.x + previous.size / 2,
+							previous.y + previous.size / 2,
+						])
+					);
+					layer.add(lines[i - 1]);
+				}
+			});
+
+			function animate(frame) {
+				const time = frame.time;
+				const index = Math.floor(time / 1000);
+				if (index >= data.length) return;
+
+				for (let i = 0; i <= index; i++) {
+					const current = data[i];
+					const progress = i === index ? (time % 1000) / 1000 : 1;
+
+					squares[i].width(current.size * progress);
+					squares[i].height(current.size * progress);
+					texts[i].opacity(progress);
+
+					if (i > 0) {
+						const previous = data[i - 1];
+						lines[i - 1].points([
+							previous.x + previous.size / 2,
+							previous.y + previous.size / 2,
+							previous.x +
+								previous.size / 2 +
+								(current.x - previous.x) * progress,
+							previous.y +
+								previous.size / 2 +
+								(current.y - previous.y) * progress,
+						]);
+					}
+				}
+
+				layer.batchDraw();
+				if (isRecording) {
+					// Copy the stage canvas to the recording canvas
+					recordingContext.clearRect(
+						0,
+						0,
+						recordingCanvas.width,
+						recordingCanvas.height
+					);
+					recordingContext.drawImage(stage.toCanvas(), 0, 0);
+				}
+			}
+		</script>
+
+		<script src="recorder.js"></script>
+
+		<script src="color_picker.js"></script>
+	</body>
+</html>
