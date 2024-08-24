@@ -3,8 +3,12 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Full Screen Konva Sequential Diagram</title>
+		<title>VizMotion</title>
 
+		<link
+			href="https://fonts.googleapis.com/css2?family=VT323&display=swap"
+			rel="stylesheet"
+		/>
 		<link rel="stylesheet" href="styles.css" />
 		<script src="https://unpkg.com/konva@8.3.13/konva.min.js"></script>
 	</head>
@@ -22,154 +26,386 @@
 		</div>
 		<div class="main-content">
 			<div id="container"></div>
+			<div class="details-panel">
+				<h3>Element Details</h3>
+				<div id="elementDetails"></div>
+				<h3>Animations</h3>
+				<div id="animationsList"></div>
+			</div>
 			<div class="chat-window">
-				<div class="chat-messages">
+				<div id="chat-messages" class="chat-messages">
 					<!-- Chat messages will go here -->
 				</div>
 				<div class="chat-input">
-					<input type="text" placeholder="Type your message..." />
-					<button>Send</button>
+					<input
+						type="text"
+						id="msg-input"
+						placeholder="Type your message..."
+					/>
+					<button id="send-msg">Send</button>
 				</div>
 			</div>
 		</div>
 		<div class="timeline">
-			<button id="playPauseBtn">Play</button>
-			<button id="downloadBtn" disabled>Download</button>
+			<div class="timeline-container">
+				<div class="timeline-track"></div>
+				<div class="timeline-cursor"></div>
+				<div class="timeline-selection"></div>
+			</div>
+			<div>
+				<button id="playPauseBtn">Play</button>
+				<button id="downloadBtn" disabled>Download</button>
+				<button id="resetBtn" onclick="resetElements()">Reset</button>
+			</div>
 		</div>
 
 		<script>
 			let stage, layer, bg_layer;
+			//let konvaShapes = [];
+			let endDuration;
+			let isRecording = false;
+			let animation;
+			let mediaRecorder;
+			let recordingCanvas, recordingContext;
 
 			// Set stage size to full screen
 			function resizeStage() {
-				stage.width(window.innerWidth - 300);
+				stage.width(window.innerWidth - 600);
 				stage.height(window.innerHeight);
 
-                bg_layer.width(window.innerWidth - 300);
-                bg_layer.height(window.innerHeight);
+				bg_layer.width(window.innerWidth - 600);
+				bg_layer.height(window.innerHeight);
 			}
-
-            window.addEventListener("resize", resizeStage);
+			const timeline = document.querySelector(".timeline-container");
+			window.addEventListener("resize", resizeStage);
 			// Initialize Konva stage and layer
 			stage = new Konva.Stage({
 				container: "container",
-				width: window.innerWidth - 300,
+				width: window.innerWidth - 600,
 				height: window.innerHeight,
 			});
 			layer = new Konva.Layer();
-            bg_layer = new Konva.Layer();
+			bg_layer = new Konva.Layer();
 
-            stage.add(bg_layer);
-            stage.add(layer);
+			stage.add(bg_layer);
+			stage.add(layer);
 
-            function setBackgroundColor(background) {
-                const bg = new Konva.Rect({
-                    x: 0,
-                    y: 0,
-                    width: stage.width(),
-                    height: stage.height(),
-                    fill: background,
-                });
-                bg_layer.add(bg);
-            }
-
-            setBackgroundColor("#1dbbce");
-
-
-			// Data for the sequential diagram
-			const data = [
-				{ x: 50, y: 100, size: 40, color: "red", label: "Step 1" },
-				{ x: 150, y: 100, size: 40, color: "green", label: "Step 2" },
-				{ x: 250, y: 100, size: 40, color: "blue", label: "Step 3" },
-				{ x: 350, y: 100, size: 40, color: "orange", label: "Step 4" },
-				{ x: 450, y: 100, size: 40, color: "purple", label: "Step 5" },
-			];
-
-          
-			function createSquare(x, y, size, color) {
-				return new Konva.Rect({
-					x: x,
-					y: y,
-					width: 0,
-					height: 0,
-					fill: color,
+			function setBackgroundColor(background) {
+				const bg = new Konva.Rect({
+					x: 0,
+					y: 0,
+					width: stage.width(),
+					height: stage.height(),
+					fill: background,
 				});
+				bg_layer.add(bg);
 			}
 
-			function createLine(points) {
-				return new Konva.Line({
-					points: points,
-					stroke: "black",
-					strokeWidth: 2,
-				});
+			function resetElements() {
+				layer.destroyChildren();
+				layer.draw();
+				document.getElementById("downloadBtn").disabled = true;
+
+				initializeElements(elements, layer);
+
+				updateTimeline(0);
 			}
 
-			function createText(text, x, y) {
-				return new Konva.Text({
-					x: x,
-					y: y,
-					text: text,
-					fontSize: 14,
-					fontFamily: "Arial",
-					fill: "black",
-					align: "center",
-					opacity: 0,
-				});
-			}
+			setBackgroundColor("#1dbbce");
 
-			let squares = [];
-			let lines = [];
-			let texts = [];
+			function showElementDetails(element) {
+				const elementDetails = document.getElementById("elementDetails");
+				const animationsList = document.getElementById("animationsList");
 
-			data.forEach((item, i) => {
-				squares.push(createSquare(item.x, item.y, item.size, item.color));
-				texts.push(createText(item.label, item.x, item.y + item.size + 20));
-				layer.add(squares[i]);
-				layer.add(texts[i]);
+				// Clear previous details
+				elementDetails.innerHTML = "";
+				animationsList.innerHTML = "";
 
-				if (i > 0) {
-					const previous = data[i - 1];
-					lines.push(
-						createLine([
-							previous.x + previous.size / 2,
-							previous.y + previous.size / 2,
-							previous.x + previous.size / 2,
-							previous.y + previous.size / 2,
-						])
-					);
-					layer.add(lines[i - 1]);
-				}
-			});
-
-			function animate(frame) {
-				const time = frame.time;
-				const index = Math.floor(time / 1000);
-				if (index >= data.length) return;
-
-				for (let i = 0; i <= index; i++) {
-					const current = data[i];
-					const progress = i === index ? (time % 1000) / 1000 : 1;
-
-					squares[i].width(current.size * progress);
-					squares[i].height(current.size * progress);
-					texts[i].opacity(progress);
-
-					if (i > 0) {
-						const previous = data[i - 1];
-						lines[i - 1].points([
-							previous.x + previous.size / 2,
-							previous.y + previous.size / 2,
-							previous.x +
-								previous.size / 2 +
-								(current.x - previous.x) * progress,
-							previous.y +
-								previous.size / 2 +
-								(current.y - previous.y) * progress,
-						]);
+				// Show element details
+				for (const [key, value] of Object.entries(element.attrs)) {
+					if (typeof value !== "object" && typeof value !== "function") {
+						const detailItem = createDetailItem(key, value, element);
+						elementDetails.appendChild(detailItem);
 					}
 				}
 
+				// Show associated animations
+				animations
+					.filter((anim) => anim.elementId === element.id())
+					.forEach((anim) => {
+						const animItem = createAnimationItem(anim);
+						animationsList.appendChild(animItem);
+					});
+			}
+
+			function createDetailItem(key, value, element) {
+				const item = document.createElement("div");
+				item.className = "detail-item";
+
+				const label = document.createElement("label");
+				label.textContent = key;
+				item.appendChild(label);
+
+				const input = document.createElement("input");
+				input.type = typeof value === "number" ? "number" : "text";
+				input.value = value;
+				item.appendChild(input);
+
+				const editBtn = document.createElement("button");
+				editBtn.textContent = "Edit";
+				editBtn.className = "edit-btn";
+				editBtn.onclick = () => editElementDetail(element, key, input.value);
+				item.appendChild(editBtn);
+
+				return item;
+			}
+
+			function createAnimationItem(anim) {
+				const item = document.createElement("div");
+				item.className = "animation-item";
+
+				const label = document.createElement("label");
+				label.textContent = `${anim.type} (${anim.startTime}ms - ${anim.endTime}ms)`;
+				item.appendChild(label);
+
+				const editBtn = document.createElement("button");
+				editBtn.textContent = "Edit";
+				editBtn.className = "edit-btn";
+				editBtn.onclick = () => editAnimation(anim);
+				item.appendChild(editBtn);
+
+				return item;
+			}
+
+			function editElementDetail(element, key, newValue) {
+				if (typeof element.attrs[key] === "number") {
+					newValue = parseFloat(newValue);
+				}
+
+				console.log(element.attrs);
+
+				element.attrs[key] = newValue;
 				layer.batchDraw();
+			}
+
+			function editAnimation(anim) {
+				// This is a placeholder for the animation editing functionality
+				// You would typically open a modal or expand a form to edit the animation details
+				console.log("Editing animation:", anim);
+				// After editing, you would update the animation in the animations array
+				// and potentially restart the animation timeline
+			}
+
+			function initializeElements(elements, layer) {
+				elements.forEach((element) => {
+					let konvaShape;
+
+					switch (element.type) {
+						case "rect":
+							konvaShape = new Konva.Rect({
+								id: element.id,
+								x: element.x,
+								y: element.y,
+								width: element.width,
+								height: element.height,
+								fill: element.color,
+								stroke: element.stroke,
+								strokeWidth: element.strokeWidth,
+								opacity: element.opacity,
+								rotation: element.rotation,
+								draggable: true,
+							});
+							break;
+						case "circle":
+							konvaShape = new Konva.Circle({
+								id: element.id,
+								x: element.x,
+								y: element.y,
+								radius: element.radius,
+								fill: element.color,
+								stroke: element.stroke,
+								strokeWidth: element.strokeWidth,
+								opacity: element.opacity,
+								rotation: element.rotation,
+								draggable: true,
+							});
+							break;
+						case "text":
+							konvaShape = new Konva.Text({
+								id: element.id,
+								x: element.x,
+								y: element.y,
+								text: element.text,
+								fontSize: element.fontSize,
+								fill: element.color,
+								opacity: element.opacity,
+								rotation: element.rotation,
+								draggable: true,
+							});
+							break;
+						case "line":
+							konvaShape = new Konva.Line({
+								id: element.id,
+								points: [element.x, element.y, element.width, element.height],
+								stroke: element.color,
+								strokeWidth: element.strokeWidth,
+								opacity: element.opacity,
+								rotation: element.rotation,
+								draggable: true,
+								dash:
+									element.lineType === "dashed"
+										? [10, 5]
+										: element.lineType === "dotted"
+										? [2, 5]
+										: undefined,
+							});
+							break;
+						// Add cases for other element types as needed
+						case "icon":
+							konvaShape = new Konva.Image({
+								id: element.id,
+								x: element.x,
+								y: element.y,
+								image: element.icon,
+								width: element.width,
+								height: element.height,
+								draggable: true,
+							});
+							break;
+					}
+
+					if (konvaShape) {
+						layer.add(konvaShape);
+					}
+
+					// Add on click event to the element
+					konvaShape.on("click", function () {
+						showElementDetails(this);
+					});
+
+					// Handle children recursively
+					if (element.children && element.children.length > 0) {
+						initializeElements(element.children, layer);
+					}
+
+					// konvaShapes.push(konvaShape);
+				});
+
+				layer.draw();
+			}
+
+			function updateTimeline(time) {
+				const progress = Math.min(time / endDuration, 1);
+				cursor.style.left = `${progress * 100}%`;
+			}
+
+			function animate(frame) {
+				const time = frame.time;
+				updateTimeline(time);
+				animations.forEach((animation) => {
+					const shape = stage.findOne("#" + animation.elementId);
+					if (!shape) return;
+
+					const progress = Math.min(
+						1,
+						Math.max(
+							0,
+							(time - animation.startTime) /
+								(animation.endTime - animation.startTime)
+						)
+					);
+					let easedProgress;
+
+					switch (animation.easing) {
+						case "easeIn":
+							easedProgress = progress * progress;
+							break;
+						case "easeOut":
+							easedProgress = 1 - Math.pow(1 - progress, 2);
+							break;
+						case "easeInOut":
+							easedProgress =
+								progress < 0.5
+									? 2 * progress * progress
+									: 1 - Math.pow(-2 * progress + 2, 2) / 2;
+							break;
+						default:
+							easedProgress = progress; // linear
+					}
+
+					switch (animation.type) {
+						case "translate":
+						case "move":
+							shape.x(
+								animation.from.x +
+									(animation.to.x - animation.from.x) * easedProgress
+							);
+							shape.y(
+								animation.from.y +
+									(animation.to.y - animation.from.y) * easedProgress
+							);
+							break;
+						case "scale":
+							shape.scaleX(
+								animation.from.scaleX +
+									(animation.to.scaleX - animation.from.scaleX) * easedProgress
+							);
+							shape.scaleY(
+								animation.from.scaleY +
+									(animation.to.scaleY - animation.from.scaleY) * easedProgress
+							);
+							break;
+						case "rotate":
+							shape.rotation(
+								animation.from.rotation +
+									(animation.to.rotation - animation.from.rotation) *
+										easedProgress
+							);
+							break;
+						case "colorChange":
+							const fromColor = Konva.Util.getRGB(animation.from.color);
+							const toColor = Konva.Util.getRGB(animation.to.color);
+							const r = Math.round(
+								fromColor.r + (toColor.r - fromColor.r) * easedProgress
+							);
+							const g = Math.round(
+								fromColor.g + (toColor.g - fromColor.g) * easedProgress
+							);
+							const b = Math.round(
+								fromColor.b + (toColor.b - fromColor.b) * easedProgress
+							);
+							shape.fill(`rgb(${r},${g},${b})`);
+							break;
+						case "opacityChange":
+							shape.opacity(
+								animation.from.opacity +
+									(animation.to.opacity - animation.from.opacity) *
+										easedProgress
+							);
+							break;
+						case "resize":
+							shape.width(
+								animation.from.width +
+									(animation.to.width - animation.from.width) * easedProgress
+							);
+							shape.height(
+								animation.from.height +
+									(animation.to.height - animation.from.height) * easedProgress
+							);
+							break;
+					}
+				});
+
+				if (time >= endDuration) {
+					// handle stop and set download button to enabled
+					cancelAnimationFrame(animationFrameId);
+					document.getElementById("playPauseBtn").textContent = "Play";
+					isRecording = false;
+					document.getElementById("downloadBtn").disabled = false;
+					animation.stop();
+					mediaRecorder.stop();
+				}
+
 				if (isRecording) {
 					// Copy the stage canvas to the recording canvas
 					recordingContext.clearRect(
@@ -180,9 +416,468 @@
 					);
 					recordingContext.drawImage(stage.toCanvas(), 0, 0);
 				}
-			}
-		</script>
 
+				/*if (isPlaying && time < endDuration) {
+								animationFrameId = requestAnimationFrame(() =>
+									animate({ time: time + 1 / 60 })
+								);
+							} else if (time >= endDuration) {
+								isPlaying = false;
+								playPauseBtn.textContent = "Play";
+							}*/
+
+				layer.batchDraw();
+			}
+
+			// Sample elements
+			let elements = [
+				{
+					id: "rect1",
+					type: "rect",
+					x: 50,
+					y: 50,
+					width: 100,
+					height: 100,
+					color: "#FF0000",
+					stroke: "#000000",
+					strokeWidth: 2,
+					opacity: 1,
+					rotation: 0,
+					draggable: true,
+				},
+				{
+					id: "circle1",
+					type: "circle",
+					x: 250,
+					y: 100,
+					radius: 50,
+					color: "#00FF00",
+					stroke: "#000000",
+					strokeWidth: 2,
+					opacity: 0.8,
+					rotation: 0,
+					draggable: false,
+				},
+				{
+					id: "text1",
+					type: "text",
+					x: 400,
+					y: 75,
+					text: "Hello, Konva!",
+					fontSize: 24,
+					color: "#0000FF",
+					opacity: 1,
+					rotation: 0,
+					draggable: true,
+				},
+				{
+					id: "line1",
+					type: "line",
+					x: 50,
+					y: 200,
+					width: 200,
+					height: 200,
+					color: "#000000",
+					strokeWidth: 3,
+					lineType: "dashed",
+					opacity: 1,
+					rotation: 0,
+					draggable: false,
+				},
+			];
+
+			// Sample animations
+			let animations = [
+				{
+					id: "anim1",
+					elementId: "rect1",
+					type: "translate",
+					startTime: 0,
+					endTime: 2000,
+					from: { x: 50, y: 50 },
+					to: { x: 200, y: 200 },
+					easing: "easeInOut",
+					loop: true,
+				},
+				{
+					id: "anim2",
+					elementId: "circle1",
+					type: "scale",
+					startTime: 500,
+					endTime: 2500,
+					from: { scaleX: 1, scaleY: 1 },
+					to: { scaleX: 1.5, scaleY: 1.5 },
+					easing: "easeOut",
+					loop: true,
+				},
+				{
+					id: "anim3",
+					elementId: "text1",
+					type: "rotate",
+					startTime: 1000,
+					endTime: 3000,
+					from: { rotation: 0 },
+					to: { rotation: 360 },
+					easing: "linear",
+					loop: false,
+				},
+				{
+					id: "anim4",
+					elementId: "rect1",
+					type: "colorChange",
+					startTime: 2000,
+					endTime: 4000,
+					from: { color: "#FF0000" },
+					to: { color: "#0000FF" },
+					easing: "easeIn",
+					loop: true,
+				},
+				{
+					id: "anim5",
+					elementId: "circle1",
+					type: "opacityChange",
+					startTime: 3000,
+					endTime: 5000,
+					from: { opacity: 0.8 },
+					to: { opacity: 0.2 },
+					easing: "easeInOut",
+					loop: true,
+				},
+				{
+					id: "anim6",
+					elementId: "line1",
+					type: "resize",
+					startTime: 1500,
+					endTime: 3500,
+					from: { width: 200, height: 200 },
+					to: { width: 300, height: 100 },
+					easing: "easeOut",
+					loop: false,
+				},
+			];
+
+			elements = [
+    {
+        id: "step1",
+        type: "circle",
+        x: 100,
+        y: 100,
+        radius: 40,
+        color: "#4CAF50",
+        stroke: "#2E7D32",
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        draggable: false,
+    },
+    {
+        id: "text1",
+        type: "text",
+        x: 100,
+        y: 150,
+        text: "1. Ideation",
+        fontSize: 16,
+        color: "#333333",
+        opacity: 1,
+        rotation: 0,
+        draggable: false,
+    },
+    {
+        id: "step2",
+        type: "circle",
+        x: 250,
+        y: 100,
+        radius: 40,
+        color: "#2196F3",
+        stroke: "#1565C0",
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        draggable: false,
+    },
+    {
+        id: "text2",
+        type: "text",
+        x: 250,
+        y: 150,
+        text: "2. Design",
+        fontSize: 16,
+        color: "#333333",
+        opacity: 1,
+        rotation: 0,
+        draggable: false,
+    },
+    {
+        id: "step3",
+        type: "circle",
+        x: 400,
+        y: 100,
+        radius: 40,
+        color: "#FFC107",
+        stroke: "#FFA000",
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        draggable: false,
+    },
+    {
+        id: "text3",
+        type: "text",
+        x: 400,
+        y: 150,
+        text: "3. Development",
+        fontSize: 16,
+        color: "#333333",
+        opacity: 1,
+        rotation: 0,
+        draggable: false,
+    },
+    {
+        id: "step4",
+        type: "circle",
+        x: 550,
+        y: 100,
+        radius: 40,
+        color: "#9C27B0",
+        stroke: "#7B1FA2",
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        draggable: false,
+    },
+    {
+        id: "text4",
+        type: "text",
+        x: 550,
+        y: 150,
+        text: "4. Testing",
+        fontSize: 16,
+        color: "#333333",
+        opacity: 1,
+        rotation: 0,
+        draggable: false,
+    },
+    {
+        id: "step5",
+        type: "circle",
+        x: 700,
+        y: 100,
+        radius: 40,
+        color: "#F44336",
+        stroke: "#D32F2F",
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        draggable: false,
+    },
+    {
+        id: "text5",
+        type: "text",
+        x: 700,
+        y: 150,
+        text: "5. Launch",
+        fontSize: 16,
+        color: "#333333",
+        opacity: 1,
+        rotation: 0,
+        draggable: false,
+    },
+    {
+        id: "processLine",
+        type: "line",
+        points: [140, 100, 660, 100],
+        color: "#333333",
+        strokeWidth: 2,
+        lineType: "solid",
+        opacity: 1,
+        rotation: 0,
+        draggable: false,
+    }
+];
+
+animations = [
+    {
+        id: "anim1",
+        elementId: "step1",
+        type: "scale",
+        startTime: 0,
+        endTime: 1000,
+        from: { scaleX: 1, scaleY: 1 },
+        to: { scaleX: 1.2, scaleY: 1.2 },
+        easing: "easeInOut",
+        loop: true,
+    },
+    {
+        id: "anim2",
+        elementId: "step2",
+        type: "scale",
+        startTime: 1000,
+        endTime: 2000,
+        from: { scaleX: 1, scaleY: 1 },
+        to: { scaleX: 1.2, scaleY: 1.2 },
+        easing: "easeInOut",
+        loop: true,
+    },
+    {
+        id: "anim3",
+        elementId: "step3",
+        type: "scale",
+        startTime: 2000,
+        endTime: 3000,
+        from: { scaleX: 1, scaleY: 1 },
+        to: { scaleX: 1.2, scaleY: 1.2 },
+        easing: "easeInOut",
+        loop: true,
+    },
+    {
+        id: "anim4",
+        elementId: "step4",
+        type: "scale",
+        startTime: 3000,
+        endTime: 4000,
+        from: { scaleX: 1, scaleY: 1 },
+        to: { scaleX: 1.2, scaleY: 1.2 },
+        easing: "easeInOut",
+        loop: true,
+    },
+    {
+        id: "anim5",
+        elementId: "step5",
+        type: "scale",
+        startTime: 4000,
+        endTime: 5000,
+        from: { scaleX: 1, scaleY: 1 },
+        to: { scaleX: 1.2, scaleY: 1.2 },
+        easing: "easeInOut",
+        loop: true,
+    },
+    {
+        id: "anim6",
+        elementId: "processLine",
+        type: "opacityChange",
+        startTime: 0,
+        endTime: 2000,
+        from: { opacity: 0.2 },
+        to: { opacity: 1 },
+        easing: "easeIn",
+        loop: true,
+    }
+];
+
+			endDuration = animations.reduce(
+				(max, anim) => Math.max(max, anim.endTime),
+				0
+			);
+			initializeElements(elements, layer);
+
+			// Data for the sequential diagram
+			/*const data = [
+							{ x: 50, y: 100, size: 40, color: "red", label: "Step 1" },
+							{ x: 150, y: 100, size: 40, color: "green", label: "Step 2" },
+							{ x: 250, y: 100, size: 40, color: "blue", label: "Step 3" },
+							{ x: 350, y: 100, size: 40, color: "orange", label: "Step 4" },
+							{ x: 450, y: 100, size: 40, color: "purple", label: "Step 5" },
+						];
+
+
+						function createSquare(x, y, size, color) {
+							return new Konva.Rect({
+								x: x,
+								y: y,
+								width: 0,
+								height: 0,
+								fill: color,
+							});
+						}
+
+						function createLine(points) {
+							return new Konva.Line({
+								points: points,
+								stroke: "black",
+								strokeWidth: 2,
+							});
+						}
+
+						function createText(text, x, y) {
+							return new Konva.Text({
+								x: x,
+								y: y,
+								text: text,
+								fontSize: 14,
+								fontFamily: "Arial",
+								fill: "black",
+								align: "center",
+								opacity: 0,
+							});
+						}
+
+						let squares = [];
+						let lines = [];
+						let texts = [];
+
+						data.forEach((item, i) => {
+							squares.push(createSquare(item.x, item.y, item.size, item.color));
+							texts.push(createText(item.label, item.x, item.y + item.size + 20));
+							layer.add(squares[i]);
+							layer.add(texts[i]);
+
+							if (i > 0) {
+								const previous = data[i - 1];
+								lines.push(
+									createLine([
+										previous.x + previous.size / 2,
+										previous.y + previous.size / 2,
+										previous.x + previous.size / 2,
+										previous.y + previous.size / 2,
+									])
+								);
+								layer.add(lines[i - 1]);
+							}
+						});
+
+						function animate(frame) {
+							const time = frame.time;
+							const index = Math.floor(time / 1000);
+							if (index >= data.length) return;
+
+							for (let i = 0; i <= index; i++) {
+								const current = data[i];
+								const progress = i === index ? (time % 1000) / 1000 : 1;
+
+								squares[i].width(current.size * progress);
+								squares[i].height(current.size * progress);
+								texts[i].opacity(progress);
+
+								if (i > 0) {
+									const previous = data[i - 1];
+									lines[i - 1].points([
+										previous.x + previous.size / 2,
+										previous.y + previous.size / 2,
+										previous.x +
+											previous.size / 2 +
+											(current.x - previous.x) * progress,
+										previous.y +
+											previous.size / 2 +
+											(current.y - previous.y) * progress,
+									]);
+								}
+							}
+
+							layer.batchDraw();
+							if (isRecording) {
+								// Copy the stage canvas to the recording canvas
+								recordingContext.clearRect(
+									0,
+									0,
+									recordingCanvas.width,
+									recordingCanvas.height
+								);
+								recordingContext.drawImage(stage.toCanvas(), 0, 0);
+							}
+						}*/
+		</script>
+		<script src="timeline.js"></script>
+		<script src="chat.js"></script>
 		<script src="recorder.js"></script>
 
 		<script src="color_picker.js"></script>

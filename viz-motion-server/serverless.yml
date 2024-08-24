@@ -1,0 +1,19 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: symbolic-expressions
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: viz-motion-server
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: viz-motion-server
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  httpApi:
+    cors: true
+
+functions:
+  api:
+    handler: handler.handler
+    events:
+      - httpApi: "*"
+    timeout: 30

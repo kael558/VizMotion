@@ -34,3 +34,13 @@ Common animations in technical diagrams from bytebytego:
 - Arrow types: none, arrow, circle, square, diamond, triangle
 
 
+Todo:
+[x] Add end time with timeline with timeline scanning
+[x] Set duration of downloaded webm
+[ ] Edit diagram and make new diagram with text
+[ ] Edit details of shape/animation will prompt to reset animation if necessary
+[ ] Save & download animation to gif or mp4 or animated svg
+[ ] Set font & icons & background of UI
+[ ] Set up pipeline of initial ask and final animation as training data
+[ ] Ability to highlight section of timeline and ask for edit
+[ ] Ability to highlight section of diagram and ask for edit
