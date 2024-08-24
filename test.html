@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Full Screen Canvas Sequential Diagram</title>
+		<style>
+			body,
+			html {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+			}
+			#myCanvas {
+				position: absolute;
+				top: 0;
+				left: 0;
+			}
+			#controls {
+				position: fixed;
+				bottom: 20px;
+				left: 50%;
+				transform: translateX(-50%);
+				z-index: 10;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas id="myCanvas"></canvas>
+		<div id="controls">
+			<button id="startBtn">Start Recording</button>
+			<button id="stopBtn" disabled>Stop Recording</button>
+			<button id="downloadBtn" disabled>Download Video</button>
+		</div>
+
+		<script>
+			const canvas = document.getElementById("myCanvas");
+			const ctx = canvas.getContext("2d");
+			let mediaRecorder;
+			let recordedChunks = [];
+
+			// Set canvas size to full screen
+			function resizeCanvas() {
+				canvas.width = window.innerWidth;
+				canvas.height = window.innerHeight;
+			}
+			resizeCanvas();
+			window.addEventListener("resize", resizeCanvas);
+
+
+
+
+            // Data for the sequential diagram
+			const data = [
+				{ x: 50, y: 100, size: 40, color: "red", label: "Step 1" },
+				{ x: 150, y: 100, size: 40, color: "green", label: "Step 2" },
+				{ x: 250, y: 100, size: 40, color: "blue", label: "Step 3" },
+				{ x: 350, y: 100, size: 40, color: "orange", label: "Step 4" },
+				{ x: 450, y: 100, size: 40, color: "purple", label: "Step 5" },
+			];
+
+			function drawSquare(x, y, size, color) {
+				ctx.fillStyle = color;
+				ctx.fillRect(x, y, size, size);
+			}
+
+			function drawLine(x1, y1, x2, y2) {
+				ctx.beginPath();
+				ctx.moveTo(x1, y1);
+				ctx.lineTo(x2, y2);
+				ctx.strokeStyle = "black";
+				ctx.lineWidth = 2;
+				ctx.stroke();
+			}
+
+			function drawText(text, x, y) {
+				ctx.fillStyle = "black";
+				ctx.font = "14px Arial";
+				ctx.textAlign = "center";
+				ctx.fillText(text, x, y);
+			}
+
+			function animate(time) {
+				// Clear canvas with white background
+				ctx.fillStyle = "white";
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+				const index = Math.floor(time / 1000);
+				if (index >= data.length) return;
+
+				for (let i = 0; i <= index; i++) {
+					const current = data[i];
+					const progress = i === index ? (time % 1000) / 1000 : 1;
+
+					if (i > 0) {
+						const previous = data[i - 1];
+						drawLine(
+							previous.x + previous.size / 2,
+							previous.y + previous.size / 2,
+							previous.x +
+								previous.size / 2 +
+								(current.x - previous.x) * progress,
+							previous.y +
+								previous.size / 2 +
+								(current.y - previous.y) * progress
+						);
+					}
+
+					drawSquare(
+						current.x,
+						current.y,
+						current.size * progress,
+						current.color
+					);
+					drawText(
+						current.label,
+						current.x + current.size / 2,
+						current.y + current.size + 20
+					);
+				}
+
+				requestAnimationFrame(animate);
+			}
+
+
+            // Start/Stop/Download buttons
+            function requestAnimationFrameWrapper () {
+                if ()
+
+
+                requestAnimationFrame(animate);
+            }
+
+
+
+			document.getElementById("startBtn").addEventListener("click", () => {
+				const stream = canvas.captureStream(30); // 30 FPS
+				mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+
+				mediaRecorder.ondataavailable = (event) => {
+					if (event.data.size > 0) {
+						recordedChunks.push(event.data);
+					}
+				};
+
+				mediaRecorder.start();
+				requestAnimationFrame(animate);
+
+				document.getElementById("startBtn").disabled = true;
+				document.getElementById("stopBtn").disabled = false;
+			});
+
+			document.getElementById("stopBtn").addEventListener("click", () => {
+				mediaRecorder.stop();
+				document.getElementById("stopBtn").disabled = true;
+				document.getElementById("downloadBtn").disabled = false;
+			});
+
+			document.getElementById("downloadBtn").addEventListener("click", () => {
+				const blob = new Blob(recordedChunks, { type: "video/webm" });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				document.body.appendChild(a);
+				a.style = "display: none";
+				a.href = url;
+				a.download = "animation.webm";
+				a.click();
+				window.URL.revokeObjectURL(url);
+			});
+		</script>
+	</body>
+</html>

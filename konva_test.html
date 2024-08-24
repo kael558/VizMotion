@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Full Screen Konva Sequential Diagram</title>
+		<style>
+			body,
+			html {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				height: 100vh;
+				font-family: "Arial", sans-serif;
+				background-color: #1a1a1a;
+				color: #fff;
+				display: flex;
+				flex-direction: column;
+				overflow: hidden;
+			}
+
+			.toolbar {
+				background-color: #2a2a2a;
+				padding: 10px;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				border-bottom: 1px solid #3a3a3a;
+			}
+
+			.toolbar button {
+				background-color: #3a3a3a;
+				color: #0ff;
+				border: none;
+				padding: 5px 10px;
+				margin: 0 5px;
+				cursor: pointer;
+				transition: background-color 0.3s;
+			}
+
+			.toolbar button:hover {
+				background-color: #4a4a4a;
+			}
+
+			.main-content {
+				display: flex;
+				flex: 1;
+				overflow: hidden;
+			}
+
+			#container {
+				flex: 3;
+				background-color: #2a2a2a;
+				border: 1px solid #3a3a3a;
+			}
+
+			.chat-window {
+				flex: 1;
+				display: flex;
+				flex-direction: column;
+				background-color: #2a2a2a;
+				border-left: 1px solid #3a3a3a;
+				padding: 10px;
+                width: 300px;
+			}
+
+			.chat-messages {
+				flex: 1;
+				overflow-y: auto;
+				margin-bottom: 10px;
+			}
+
+			.chat-input {
+				display: flex;
+			}
+
+			.chat-input input {
+				flex: 1;
+				background-color: #3a3a3a;
+				border: none;
+				color: #fff;
+				padding: 5px;
+			}
+
+			.chat-input button {
+				background-color: #0ff;
+				color: #1a1a1a;
+				border: none;
+				padding: 5px 10px;
+				cursor: pointer;
+			}
+
+			.timeline {
+				background-color: #2a2a2a;
+				padding: 10px;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				border-top: 1px solid #3a3a3a;
+			}
+
+			.timeline button {
+				background-color: #3a3a3a;
+				color: #0ff;
+				border: none;
+				padding: 5px 10px;
+				margin: 0 5px;
+				cursor: pointer;
+				transition: background-color 0.3s;
+			}
+
+			.timeline button:hover {
+				background-color: #4a4a4a;
+			}
+		</style>
+		<script src="https://unpkg.com/konva@8.3.13/konva.min.js"></script>
+	</head>
+	<body>
+		<div class="toolbar">
+			<div>
+				<button>Undo</button>
+				<button>Redo</button>
+			</div>
+			<div>
+				<button>Set Background</button>
+				<button>Change Size</button>
+			</div>
+		</div>
+		<div class="main-content">
+			<div id="container"></div>
+			<div class="chat-window">
+				<div class="chat-messages">
+					<!-- Chat messages will go here -->
+				</div>
+				<div class="chat-input">
+					<input type="text" placeholder="Type your message..." />
+					<button>Send</button>
+				</div>
+			</div>
+		</div>
+		<div class="timeline">
+			<button id="playPauseBtn">Play</button>
+			<button id="downloadBtn">Download</button>
+		</div>
+
+		<script>
+			let stage, layer;
+
+			// Set stage size to full screen
+			function resizeStage() {
+				stage.width(window.innerWidth - 300);
+				stage.height(window.innerHeight);
+			}
+
+			// Initialize Konva stage and layer
+			stage = new Konva.Stage({
+				container: "container",
+				width: window.innerWidth - 300,
+				height: window.innerHeight,
+			});
+			layer = new Konva.Layer();
+			stage.add(layer);
+
+			window.addEventListener("resize", resizeStage);
+
+			// Data for the sequential diagram
+			const data = [
+				{ x: 50, y: 100, size: 40, color: "red", label: "Step 1" },
+				{ x: 150, y: 100, size: 40, color: "green", label: "Step 2" },
+				{ x: 250, y: 100, size: 40, color: "blue", label: "Step 3" },
+				{ x: 350, y: 100, size: 40, color: "orange", label: "Step 4" },
+				{ x: 450, y: 100, size: 40, color: "purple", label: "Step 5" },
+			];
+
+			function createSquare(x, y, size, color) {
+				return new Konva.Rect({
+					x: x,
+					y: y,
+					width: 0,
+					height: 0,
+					fill: color,
+				});
+			}
+
+			function createLine(points) {
+				return new Konva.Line({
+					points: points,
+					stroke: "black",
+					strokeWidth: 2,
+				});
+			}
+
+			function createText(text, x, y) {
+				return new Konva.Text({
+					x: x,
+					y: y,
+					text: text,
+					fontSize: 14,
+					fontFamily: "Arial",
+					fill: "black",
+					align: "center",
+					opacity: 0,
+				});
+			}
+
+			let squares = [];
+			let lines = [];
+			let texts = [];
+
+			data.forEach((item, i) => {
+				squares.push(createSquare(item.x, item.y, item.size, item.color));
+				texts.push(createText(item.label, item.x, item.y + item.size + 20));
+				layer.add(squares[i]);
+				layer.add(texts[i]);
+
+				if (i > 0) {
+					const previous = data[i - 1];
+					lines.push(
+						createLine([
+							previous.x + previous.size / 2,
+							previous.y + previous.size / 2,
+							previous.x + previous.size / 2,
+							previous.y + previous.size / 2,
+						])
+					);
+					layer.add(lines[i - 1]);
+				}
+			});
+
+			function animate(frame) {
+				const time = frame.time;
+				const index = Math.floor(time / 1000);
+				if (index >= data.length) return;
+
+				for (let i = 0; i <= index; i++) {
+					const current = data[i];
+					const progress = i === index ? (time % 1000) / 1000 : 1;
+
+					squares[i].width(current.size * progress);
+					squares[i].height(current.size * progress);
+					texts[i].opacity(progress);
+
+					if (i > 0) {
+						const previous = data[i - 1];
+						lines[i - 1].points([
+							previous.x + previous.size / 2,
+							previous.y + previous.size / 2,
+							previous.x +
+								previous.size / 2 +
+								(current.x - previous.x) * progress,
+							previous.y +
+								previous.size / 2 +
+								(current.y - previous.y) * progress,
+						]);
+					}
+				}
+
+				layer.batchDraw();
+				if (isRecording) {
+					// Copy the stage canvas to the recording canvas
+					recordingContext.clearRect(
+						0,
+						0,
+						recordingCanvas.width,
+						recordingCanvas.height
+					);
+					recordingContext.drawImage(stage.toCanvas(), 0, 0);
+				}
+			}
+
+			let mediaRecorder;
+			let recordedChunks = [];
+			let isRecording = false;
+			let recordingCanvas, recordingContext;
+
+			let animation;
+
+			document.getElementById("startBtn").addEventListener("click", () => {
+				// Reset the animation state
+				squares.forEach((square) => {
+					square.width(0);
+					square.height(0);
+				});
+				texts.forEach((text) => {
+					text.opacity(0);
+				});
+				lines.forEach((line) => {
+					const points = line.points();
+					line.points([points[0], points[1], points[0], points[1]]);
+				});
+
+				recordedChunks = []; // Clear previous recordings
+				isRecording = true;
+
+				//const canvas = stage.toCanvas();
+				console.log("Canvas created:", canvas);
+
+				let stream;
+				try {
+					recordingCanvas = document.createElement("canvas");
+					recordingCanvas.width = stage.width();
+					recordingCanvas.height = stage.height();
+					recordingContext = recordingCanvas.getContext("2d");
+
+					stream = recordingCanvas.captureStream(30);
+					//stream = canvas.captureStream(30); // 30 FPS
+					console.log("Stream created:", stream);
+				} catch (error) {
+					console.error("Error creating stream:", error);
+					return;
+				}
+
+				const options = { mimeType: "video/webm; codecs=vp9" };
+				if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+					console.warn(
+						`${options.mimeType} is not supported, trying "video/webm"`
+					);
+					options.mimeType = "video/webm";
+				}
+
+				try {
+					mediaRecorder = new MediaRecorder(stream, options);
+					console.log("MediaRecorder created:", mediaRecorder);
+				} catch (error) {
+					console.error("Error creating MediaRecorder:", error);
+					return;
+				}
+
+				mediaRecorder.ondataavailable = (event) => {
+					console.log("Data available event:", event);
+					if (event.data.size > 0) {
+						recordedChunks.push(event.data);
+						console.log("Chunk added, total chunks:", recordedChunks.length);
+					}
+				};
+
+				mediaRecorder.start(1000);
+				console.log("MediaRecorder started");
+
+				animation = new Konva.Animation(animate, layer);
+				animation.start();
+
+				document.getElementById("startBtn").disabled = true;
+				document.getElementById("stopBtn").disabled = false;
+			});
+			document.getElementById("stopBtn").addEventListener("click", () => {
+				document.getElementById("stopBtn").disabled = true;
+
+				console.log("Stopping animation and MediaRecorder in 5 seconds");
+				setTimeout(() => {
+					isRecording = false;
+					animation.stop();
+					mediaRecorder.stop();
+					console.log("Animation and MediaRecorder stopped");
+					document.getElementById("downloadBtn").disabled = false;
+				}, 5000);
+			});
+
+			document.getElementById("downloadBtn").addEventListener("click", () => {
+				if (recordedChunks.length === 0) {
+					console.error("No data recorded");
+					return;
+				}
+
+				console.log("Creating blob from", recordedChunks.length, "chunks");
+				const blob = new Blob(recordedChunks, { type: "video/webm" });
+				console.log("Blob created:", blob);
+
+				console.log("Blob size:", blob.size, "bytes");
+
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				document.body.appendChild(a);
+				a.style = "display: none";
+				a.href = url;
+				a.download = "animation.webm";
+				a.click();
+				//window.URL.revokeObjectURL(url);
+				console.log("Download initiated");
+
+				const video = document.createElement("video");
+				video.src = url;
+				video.controls = true;
+				document.body.appendChild(video);
+			});
+		</script>
+	</body>
+</html>
