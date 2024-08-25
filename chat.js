@@ -1,7 +1,7 @@
 const messages = [
 	{
 		role: "assistant",
-		content: "Hi! Describe the diagram you want and I'll create it for you.",
+		content: "Hi! Describe the diagram & animations you want and I'll create it for you.",
 	},
 	/*{
         "role": "user",
@@ -39,7 +39,7 @@ async function getToken() {
 	const response = await fetch(
 		"https://8mkbzr26h5.execute-api.us-east-1.amazonaws.com/token",
 		{
-			method: "POST",
+			method: "GET",
 			headers: {
 				"Content-Type": "application/json",
 				Accept: "application/json",
@@ -61,12 +61,18 @@ async function getToken() {
 
 async function chat(message) {
 	if (!token) {
+        // TODO check if expired after 60min
 		token = await getToken();
 	}
 
 	const options = {
 		method: "POST",
-		body: JSON.stringify({ input: message || "" }),
+		body: JSON.stringify({
+             input: message || "",
+             model_id: "ibm/granite-20b-code-instruct",
+
+
+         }),
 		headers: {
 			"Content-Type": "application/json",
 			Accept: "application/json",

@@ -4,6 +4,7 @@ const axios = require("axios");
 const dotenv = require("dotenv");
 const cors = require("cors");
 dotenv.config();
+const { generateText } = require("./api_interface.js");
 
 const app = express();
 app.use(cors());
@@ -42,30 +43,9 @@ app.post("/chat", async (req, res, next) => {
     // get access token from header
     const ACCESS_TOKEN = req.headers.authorization.split(" ")[1];
 
-    const response = await axios.post(
-      "https://us-south.ml.cloud.ibm.com/ml/v1/text/generation?version=2023-05-29",
-      {
-        input: req.body.input || "",
-        parameters: {
-          decoding_method: "greedy",
-          max_new_tokens: 500,
-          min_new_tokens: 0,
-          stop_sequences: [],
-          repetition_penalty: 1
-        },
-        model_id: req.body.model_id || "codellama/codellama-34b-instruct-hf",
-        project_id: "5b52165b-bda4-4880-8178-3b2fb9f5289f"
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${ACCESS_TOKEN}`
-        }
-      }
-    );
+    const response = generateText(ACCESS_TOKEN, req.body.input);
 
-    return res.status(200).json(response.data);
+    return res.status(200).json(response);
   } catch (error) {
     console.error("Error calling IBM Watson ML API:", error);
     return res.status(500).json({
