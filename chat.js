@@ -9,30 +9,46 @@ const messages = [
     }*/
 ];
 
-function renderMessages() {
-	const chat = document.getElementById("chat-messages");
-	chat.innerHTML = ""; // Clear existing messages
+function renderMessages(isLoading = false) {
+    const chat = document.getElementById("chat-messages");
+    chat.innerHTML = ""; // Clear existing messages
 
-	messages.forEach((message) => {
-		const div = document.createElement("div");
-		div.className = `message ${message.role}`;
+    messages.forEach((message) => {
+        const div = document.createElement("div");
+        div.className = `message ${message.role}`;
 
-		const header = document.createElement("div");
-		header.className = "message-header";
-		header.textContent = message.role === "assistant" ? "Bot:" : "User:";
+        const header = document.createElement("div");
+        header.className = "message-header";
+        header.textContent = message.role === "assistant" ? "Bot:" : "User:";
 
-		const content = document.createElement("div");
-		content.textContent = message.content;
+        const content = document.createElement("div");
+        content.textContent = message.content;
 
-		div.appendChild(header);
-		div.appendChild(content);
-		chat.appendChild(div);
-	});
+        div.appendChild(header);
+        div.appendChild(content);
+        chat.appendChild(div);
+    });
 
-	// Scroll to the bottom of the chat
-	chat.scrollTop = chat.scrollHeight;
+    // Add loading indicator if isLoading is true
+    if (isLoading) {
+        const loadingDiv = document.createElement("div");
+        loadingDiv.className = "message assistant loading";
+
+        const header = document.createElement("div");
+        header.className = "message-header";
+        header.textContent = "Bot:";
+
+        const content = document.createElement("div");
+        content.textContent = "Loading...";
+
+        loadingDiv.appendChild(header);
+        loadingDiv.appendChild(content);
+        chat.appendChild(loadingDiv);
+    }
+
+    // Scroll to the bottom of the chat
+    chat.scrollTop = chat.scrollHeight;
 }
-
 let token = "";
 
 async function getToken() {
@@ -54,7 +70,7 @@ async function getToken() {
 	}
 
 	const data = await response.json();
-	console.log(data);
+	//console.log(data);
 
 	return data.access_token;
 }
@@ -95,10 +111,47 @@ async function chat(message) {
 	return data.results[0].generated_text;
 }
 
-function executeJavaScript(code) {
+async function search(query) {
+	const response = await fetch(
+		"https://8mkbzr26h5.execute-api.us-east-1.amazonaws.com/search",
+		{
+			method: "POST",
+			body: JSON.stringify({ query }),
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "application/json",
+			},
+		}
+	);
+
+	if (!response.ok) {
+		const message = `An error has occured: ${response.status}`;
+		console.error(message);
+		return message;
+	}
+
+	const data = await response.json();
+	return data;
+}
+
+async function validateCode(code) {
 	try {
-        console.log(code);
-		return eval(code);
+		eval(code);
+
+		// iterate elements and map to object
+		for (const element of elements) {
+			if (element.type === "image"){
+				const image = element.src;
+
+				// search
+				const response = await search(image);
+				element.src = "icons/" + response.matches[0].metadata.filename;
+			}
+		}
+
+		console.log(elements);
+
+		return "Code executed successfully!";
 	} catch (error) {
 		return `Error executing code: ${error.message}`;
 	}
@@ -111,7 +164,7 @@ document.getElementById("send-msg").addEventListener("click", async (e) => {
 	input.value = ""; // Clear input field
 
 	messages.push({ role: "user", content: message });
-	renderMessages();
+	renderMessages(true);
 
 	const response = await chat(message);
     console.log(response);
@@ -127,7 +180,7 @@ document.getElementById("send-msg").addEventListener("click", async (e) => {
 		modifiedResponse += response.slice(lastIndex, match.index);
 
 		const code = match[1].trim();
-		const result = executeJavaScript(code);
+		const result = await validateCode(code);
 
 		// Append the code execution result
 		modifiedResponse += `Code execution result:\n${result}\n`;
@@ -141,5 +194,6 @@ document.getElementById("send-msg").addEventListener("click", async (e) => {
 	// Push the modified response to messages
 	messages.push({ role: "assistant", content: modifiedResponse });
     renderMessages();
+	resetElements();
 });
 renderMessages();

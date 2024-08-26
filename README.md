@@ -1,13 +1,13 @@
 # VizMotion
 
 
-1. Generate an animated diagram with text similar to bytebytego videos
-2. Edit the diagram with text
-3. Can pause and edit shapes/text during the animation
+1. Generate an animated diagram using text input
+2. Can pause and edit shapes/text during the aniation
+3. Can export the animation to video
+
+
 4. Ability to highlight section of timeline and ask for edit
 5. Ability to highlight section of diagram and ask for edit
-6. Can export the animation to gif or mp4 or animated svg
-7. Template library for common diagram shapes
 
 
 Common animations in technical diagrams from bytebytego:

@@ -16,4 +16,4 @@ functions:
     handler: handler.handler
     events:
       - httpApi: "*"
-    timeout: 30
+    timeout: 180

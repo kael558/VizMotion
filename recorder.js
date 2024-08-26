@@ -3,18 +3,15 @@ let recordedChunks = [];
 document.getElementById("playPauseBtn").addEventListener("click", () => {
 	if (isRecording) {
 		cancelAnimationFrame(animationFrameId);
-		console.log("Stopping animation and MediaRecorder in 5 seconds");
 
 		document.getElementById("playPauseBtn").textContent = "Play";
 		isRecording = false;
 		animation.stop();
 		mediaRecorder.stop();
-		console.log("Animation and MediaRecorder stopped");
 
 		return;
 	}
 
-	console.log("Starting animation and MediaRecorder");
 
 	//startTime = performance.now() - (cursor.offsetLeft / timeline.offsetWidth) * endDuration * 1000;
 
@@ -32,7 +29,6 @@ document.getElementById("playPauseBtn").addEventListener("click", () => {
 
 		stream = recordingCanvas.captureStream(30);
 		//stream = canvas.captureStream(30); // 30 FPS
-		console.log("Stream created:", stream);
 	} catch (error) {
 		console.error("Error creating stream:", error);
 		return;
@@ -46,22 +42,19 @@ document.getElementById("playPauseBtn").addEventListener("click", () => {
 
 	try {
 		mediaRecorder = new MediaRecorder(stream, options);
-		console.log("MediaRecorder created:", mediaRecorder);
+		//console.log("MediaRecorder created:", mediaRecorder);
 	} catch (error) {
 		console.error("Error creating MediaRecorder:", error);
 		return;
 	}
 
 	mediaRecorder.ondataavailable = (event) => {
-		console.log("Data available event:", event);
 		if (event.data.size > 0) {
 			recordedChunks.push(event.data);
-			console.log("Chunk added, total chunks:", recordedChunks.length);
 		}
 	};
 
 	mediaRecorder.start(1000);
-	console.log("MediaRecorder started");
 
 	animation = new Konva.Animation(animate, layer);
 	animation.start();
@@ -72,9 +65,7 @@ document.getElementById("downloadBtn").addEventListener("click", async () => {
 		return;
 	}
 
-	console.log("Creating blob from", recordedChunks.length, "chunks");
 	const originalBlob = new Blob(recordedChunks, { type: "video/webm" });
-	console.log("Original Blob created:", originalBlob);
 
 	// Convert Blob to ArrayBuffer
 	const arrayBuffer = await originalBlob.arrayBuffer();
@@ -96,8 +87,6 @@ document.getElementById("downloadBtn").addEventListener("click", async () => {
 
 	// Create a new Blob with the modified data
 	const modifiedBlob = new Blob([arrayBuffer], { type: "video/webm" });
-	console.log("Modified Blob created:", modifiedBlob);
-	console.log("Modified Blob size:", modifiedBlob.size, "bytes");
 
 	const url = URL.createObjectURL(modifiedBlob);
 	const a = document.createElement("a");
@@ -107,5 +96,4 @@ document.getElementById("downloadBtn").addEventListener("click", async () => {
 	a.download = "animation.webm";
 	a.click();
 	window.URL.revokeObjectURL(url);
-	console.log("Download initiated");
 });
