@@ -58,5 +58,5 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-[license-shield]: https://img.shields.io/github/license/yourusername/VizMotion.svg?style=for-the-badge
-[license-url]: https://github.com/yourusername/VizMotion/blob/main/LICENSE
+[license-shield]: https://img.shields.io/github/license/kael558/VizMotion.svg?style=for-the-badge
+[license-url]: https://github.com/kael558/VizMotion/blob/main/LICENSE
