@@ -28,7 +28,13 @@
 VizMotion is a revolutionary tool designed to simplify the creation of animated diagrams. It allows users to generate animations from text input, make real-time edits to shapes and text during playback, and seamlessly pause to refine details. VizMotion aims to enhance the learning experience by providing visual explanations for complex concepts.
 
 ## 📖 Getting Started 
-Navigate to `https://kael558.github.io/VizMotion/` to access the application.
+Navigate to `https://kael558.github.io/VizMotion/` to access and use the application.
+
+### Host your own
+The backend server code is hosted on AWS SAM which can be easily deployed using the following steps:
+1. Set up your .env in the viz-motion-server folder
+2. Run `serverless deploy` to deploy to AWS
+3. Change the endpoints in the frontend to point to the new server
 
 ## 🔧 How It Works
 1. User inputs text describing the desired animation
