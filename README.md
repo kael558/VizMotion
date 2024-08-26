@@ -57,7 +57,7 @@ The backend server code is hosted on AWS SAM which can be easily deployed using 
 - Caters to visual learners, enhancing understanding of complex concepts
 
 ## 🤝 Contributing
-Contributions are welcome! Please fork the project and create a pull request with your suggested changes.
+Contributions are welcome! Please create a new branch and create a pull request with your suggested changes.
 
 ## ⚖️ License
 Distributed under the MIT License. See `LICENSE.txt` for more information.
