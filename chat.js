@@ -85,9 +85,6 @@ async function chat(message) {
 		method: "POST",
 		body: JSON.stringify({
              input: message || "",
-             model_id: "ibm/granite-20b-code-instruct",
-
-
          }),
 		headers: {
 			"Content-Type": "application/json",
@@ -156,6 +153,7 @@ async function validateCode(code) {
 		return `Error executing code: ${error.message}`;
 	}
 }
+
 
 document.getElementById("send-msg").addEventListener("click", async (e) => {
 	e.preventDefault();

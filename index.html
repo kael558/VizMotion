@@ -215,6 +215,9 @@
 					}
 				});
 
+				maxWidth += 200;
+				maxHeight += 100;
+
 				stage.width(maxWidth);
 				stage.height(maxHeight);
 
@@ -302,6 +305,11 @@
 							});
 							break;
 						case "image":
+							console.log(element.src);
+							if (! element.src.includes("icons")){
+								element.src = "icons/"+element.src;
+							}
+
 							Konva.Image.fromURL(element.src, function (konvaShape) {
 								konvaShape.setAttrs({
 									id: element.id,
@@ -495,7 +503,7 @@
 							break;
 						case "opacityChange":
 							if (time < animation.startTime) {
-								break;
+								//break;
 							}
 
 							shape.opacity(
@@ -1689,228 +1697,6 @@
 				},
 			];
 
-			const width = window.innerWidth - 600;
-
-			elements = [
-				{
-					id: "sky",
-					type: "rect",
-					x: 0,
-					y: 0,
-					width: 800,
-					height: 300,
-					color: "#87CEEB",
-				},
-				{
-					id: "sun",
-					type: "circle",
-					x: 700,
-					y: 80,
-					radius: 50,
-					color: "#FFD700",
-				},
-				{
-					id: "cloud1",
-					type: "image",
-					src: "icons/cloud.png",
-					x: 100,
-					y: 50,
-					width: 100,
-					height: 60,
-				},
-				{
-					id: "cloud2",
-					type: "image",
-					src: "icons/cloud.png",
-					x: 500,
-					y: 30,
-					width: 120,
-					height: 70,
-				},
-				{
-					id: "mountain",
-					type: "image",
-					src: "icons/mountain.png",
-					x: 100,
-					y: 200,
-					width: 300,
-					height: 200,
-				},
-				{
-					id: "ground",
-					type: "rect",
-					x: 0,
-					y: 350,
-					width: 800,
-					height: 150,
-					color: "#8B4513",
-				},
-				{
-					id: "river",
-					type: "image",
-					src: "icons/river.png",
-					x: 100,
-					y: 350,
-					width: 800,
-					height: 150,
-				},
-				{
-					id: "raindrops",
-					type: "image",
-					src: "icons/raindrops.png",
-					x: 450,
-					y: 150,
-					width: 100,
-					height: 100,
-					opacity: 0,
-				},
-				{
-					id: "evaporationArrows",
-					type: "image",
-					src: "icons/arrows-up.png",
-					x: 600,
-					y: 300,
-					width: 100,
-					height: 100,
-					opacity: 0,
-				},
-				{
-					id: "condensationText",
-					type: "text",
-					x: 300,
-					y: 100,
-					text: "Condensation",
-					fontSize: 18,
-					color: "#000000",
-					opacity: 0,
-				},
-				{
-					id: "precipitationText",
-					type: "text",
-					x: 500,
-					y: 100,
-					text: "Precipitation",
-					fontSize: 18,
-					color: "#000000",
-					opacity: 0,
-				},
-				{
-					id: "evaporationText",
-					type: "text",
-					x: 650,
-					y: 250,
-					text: "Evaporation",
-					fontSize: 18,
-					color: "#000000",
-					opacity: 0,
-				},
-			];
-
-			animations = [
-				{
-					id: "sunRotation",
-					elementId: "sun",
-					type: "rotate",
-					from: { rotation: 0 },
-					to: { rotation: 360 },
-					startTime: 0,
-					endTime: 10000,
-					easing: "linear",
-					loop: true,
-				},
-				{
-					id: "cloud1Movement",
-					elementId: "cloud1",
-					type: "translate",
-					from: { x: 100, y: 50 },
-					to: { x: 300, y: 50 },
-					startTime: 0,
-					endTime: 5000,
-					easing: "easeInOut",
-					loop: true,
-				},
-				{
-					id: "cloud2Movement",
-					elementId: "cloud2",
-					type: "translate",
-					from: { x: 500, y: 30 },
-					to: { x: 300, y: 30 },
-					startTime: 0,
-					endTime: 6000,
-					easing: "easeInOut",
-					loop: true,
-				},
-				{
-					id: "evaporationAppear",
-					elementId: "evaporationArrows",
-					type: "opacityChange",
-					from: { opacity: 0 },
-					to: { opacity: 1 },
-					startTime: 1000,
-					endTime: 2000,
-					easing: "easeIn",
-				},
-				{
-					id: "evaporationDisappear",
-					elementId: "evaporationArrows",
-					type: "opacityChange",
-					from: { opacity: 1 },
-					to: { opacity: 0 },
-					startTime: 3000,
-					endTime: 4000,
-					easing: "easeOut",
-				},
-				{
-					id: "rainAppear",
-					elementId: "raindrops",
-					type: "opacityChange",
-					from: { opacity: 0 },
-					to: { opacity: 1 },
-					startTime: 5000,
-					endTime: 6000,
-					easing: "easeIn",
-				},
-				{
-					id: "rainDisappear",
-					elementId: "raindrops",
-					type: "opacityChange",
-					from: { opacity: 1 },
-					to: { opacity: 0 },
-					startTime: 7000,
-					endTime: 8000,
-					easing: "easeOut",
-				},
-				{
-					id: "condensationTextAppear",
-					elementId: "condensationText",
-					type: "opacityChange",
-					from: { opacity: 0 },
-					to: { opacity: 1 },
-					startTime: 2000,
-					endTime: 3000,
-					easing: "easeIn",
-				},
-				{
-					id: "precipitationTextAppear",
-					elementId: "precipitationText",
-					type: "opacityChange",
-					from: { opacity: 0 },
-					to: { opacity: 1 },
-					startTime: 5000,
-					endTime: 6000,
-					easing: "easeIn",
-				},
-				{
-					id: "evaporationTextAppear",
-					elementId: "evaporationText",
-					type: "opacityChange",
-					from: { opacity: 0 },
-					to: { opacity: 1 },
-					startTime: 1000,
-					endTime: 2000,
-					easing: "easeIn",
-				},
-			];
 
 			initializeElements(elements, layer);
 

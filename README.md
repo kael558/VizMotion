@@ -5,7 +5,6 @@
 2. Can pause and edit shapes/text during the aniation
 3. Can export the animation to video
 
-
 4. Ability to highlight section of timeline and ask for edit
 5. Ability to highlight section of diagram and ask for edit
 

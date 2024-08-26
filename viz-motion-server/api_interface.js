@@ -326,6 +326,7 @@ OUTPUT:`,
 			stop_sequences: [],
 			repetition_penalty: 1,
             stop_sequences: ["INPUT"],
+			random_seed: 31
 		},
 		model_id: "ibm/granite-34b-code-instruct",
 		project_id: "5b52165b-bda4-4880-8178-3b2fb9f5289f",
